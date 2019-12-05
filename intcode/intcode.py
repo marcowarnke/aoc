@@ -15,6 +15,16 @@ class Instruction:
         self.start_pos = start
         self.end_pos = end
         self.program = program
+        self.OPCODE_FUNCTION_MAP = {
+            1: self.add,
+            2: self.mul,
+            3: self.read,
+            4: self.write,
+            5: self.jmp_nzero,
+            6: self.jmp_zero,
+            7: self.lt,
+            8: self.eq
+        }
 
     def __str__(self):
         return f"[opcode: {self.opcode}, num_of_params: {self.num_of_params}, params: {str(self.params)}, raw_intcode: {self.raw_intcode}]"
@@ -25,52 +35,65 @@ class Instruction:
                 updates the pc depending on the length of the executed instruction,
                 updates values in the source program.
         """
-        if self.opcode == 1:
-            # add p1, p2, s1
-            self.params[2].save_value(
-                self.params[0].read_value() + self.params[1].read_value())
-            pc += 4
-        elif self.opcode == 2:
-            # mul p1, p2, s1
-            self.params[2].save_value(
-                self.params[0].read_value() * self.params[1].read_value())
-            pc += 4
-        elif self.opcode == 3:
-            # read p1
-            user_input = int(input("input integer: "))
-            self.params[0].save_value(user_input)
-            pc += 2
-        elif self.opcode == 4:
-            # write p1
-            print(f"output: {self.params[0].read_value()}")
-            pc += 2
-        elif self.opcode == 5:
-            # jmp_nzero p1, pc
-            if self.params[0].read_value() != 0:
-                pc = self.params[1].read_value()
-            else:
-                pc += 3
-        elif self.opcode == 6:
-            # jmp_zero p1, pc
-            if self.params[0].read_value() == 0:
-                pc = self.params[1].read_value()
-            else:
-                pc += 3
-        elif self.opcode == 7:
-            # lt p1, p2, s1
-            if self.params[0].read_value() < self.params[1].read_value():
-                self.params[2].save_value(1)
-            else:
-                self.params[2].save_value(0)
-            pc += 4
-        elif self.opcode == 8:
-            # eq p1, p2, s1
-            if self.params[0].read_value() == self.params[1].read_value():
-                self.params[2].save_value(1)
-            else:
-                self.params[2].save_value(0)
-            pc += 4
-        return pc
+
+        if self.opcode in self.OPCODE_FUNCTION_MAP.keys():
+            return self.OPCODE_FUNCTION_MAP[self.opcode](pc)
+        else:
+            raise LookupError(
+                f"Could not run interpreter function for instruction: {self}")
+
+    def add(self, pc):
+        # add p1, p2, s1
+        self.params[2].save_value(
+            self.params[0].read_value() + self.params[1].read_value())
+        return pc + 4
+
+    def mul(self, pc):
+        # mul p1, p2, s1
+        self.params[2].save_value(
+            self.params[0].read_value() * self.params[1].read_value())
+        return pc + 4
+
+    def read(self, pc):
+        # read p1
+        user_input = int(input("input integer: "))
+        self.params[0].save_value(user_input)
+        return pc + 2
+
+    def write(self, pc):
+        # write p1
+        print(f"output: {self.params[0].read_value()}")
+        return pc + 2
+
+    def jmp_nzero(self, pc):
+        # jmp_nzero p1, pc
+        if self.params[0].read_value() != 0:
+            return self.params[1].read_value()
+        else:
+            return pc + 3
+
+    def jmp_zero(self, pc):
+        # jmp_zero p1, pc
+        if self.params[0].read_value() == 0:
+            return self.params[1].read_value()
+        else:
+            return pc + 3
+
+    def lt(self, pc):
+        # lt p1, p2, s1
+        if self.params[0].read_value() < self.params[1].read_value():
+            self.params[2].save_value(1)
+        else:
+            self.params[2].save_value(0)
+        return pc + 4
+
+    def eq(self, pc):
+        # eq p1, p2, s1
+        if self.params[0].read_value() == self.params[1].read_value():
+            self.params[2].save_value(1)
+        else:
+            self.params[2].save_value(0)
+        return pc + 4
 
 
 class Parameter:
