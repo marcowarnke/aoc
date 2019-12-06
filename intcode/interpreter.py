@@ -198,7 +198,3 @@ class IntcodeInterpreter:
                 break
             else:
                 self.pc = instruction.execute(self.pc)
-
-
-interpreter = IntcodeInterpreter()
-interpreter.execute_file("d:/aoc/day05/input.txt")
