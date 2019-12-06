@@ -1,3 +1,2 @@
-notes:
-
-- to use intcode lib import as `from intcode import interpreter` and run file as module with `python -m foldername.filename`
+### Advent of Code 2019
+This repository contains my solutions to [Advent of Code](https://adventofcode.com) 2019 in Python.
