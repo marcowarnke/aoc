@@ -1,9 +1,13 @@
+"""
+Provides classes for interpreting intcode programs.
+"""
 from typing import List
 
 
 class Instruction:
     """
-    A class for intcode instructions, every instruction represents an executable step in an intcode program.
+    A class for intcode instructions,
+    every instruction represents an executable step in an intcode program.
     """
 
     def __init__(self, program, raw, start, end, opcode, params, num_of_params):
@@ -29,15 +33,20 @@ class Instruction:
     def __str__(self):
         return f"[opcode: {self.opcode}, num_of_params: {self.num_of_params}, params: {str(self.params)}, raw_intcode: {self.raw_intcode}]"
 
-    def execute(self, pc) -> bool:
-        """ Executes the instruction. 
-            Has following sideeffects: 
+    def execute(self, pc, output_list, input_list) -> bool:
+        """ Executes the instruction.
+            Has following sideeffects:
                 updates the pc depending on the length of the executed instruction,
                 updates values in the source program.
         """
 
         if self.opcode in self.OPCODE_FUNCTION_MAP.keys():
-            return self.OPCODE_FUNCTION_MAP[self.opcode](pc)
+            func = self.OPCODE_FUNCTION_MAP[self.opcode]
+            if func == self.write:
+                return func(pc, output_list)
+            elif func == self.read:
+                return func(pc, input_list)
+            return func(pc)
         else:
             raise LookupError(
                 f"Could not run interpreter function for instruction: {self}")
@@ -54,15 +63,20 @@ class Instruction:
             self.params[0].read_value() * self.params[1].read_value())
         return pc + 4
 
-    def read(self, pc):
+    def read(self, pc, input_list: List[int]):
         # read p1
-        user_input = int(input("input integer: "))
+        #user_input = int(input("input integer: "))
+        if len(input_list) == 0:
+            print("jo hier ist nix drinne")
+        user_input = input_list.pop(0)
         self.params[0].save_value(user_input)
         return pc + 2
 
-    def write(self, pc):
+    def write(self, pc, output_list: List[int]):
         # write p1
-        print(f"output: {self.params[0].read_value()}")
+        output_value = self.params[0].read_value()
+        print(f"output: {output_value}")
+        output_list.append(output_value)
         return pc + 2
 
     def jmp_nzero(self, pc):
@@ -187,14 +201,20 @@ class IntcodeInterpreter:
         self.reader = IntcodeReader()
         self.pc = 0
 
-    def execute_file(self, filename: str):
+    def execute_file(self, filename: str, **kwargs):
         source = self.reader.read_file(filename)
-        self.execute(source)
+        self.execute(source, **kwargs)
+        self.pc = 0
 
-    def execute(self, source: List[int]):
+    def execute(self, source: List[int], **kwargs):
         while True:
             instruction = self.reader.next_instruction(source, self.pc)
             if instruction is None:
                 break
             else:
-                self.pc = instruction.execute(self.pc)
+                if "output" and "input" in kwargs:
+                    self.pc = instruction.execute(
+                        self.pc, kwargs["output"], kwargs["input"])
+                else:
+                    raise ValueError(
+                        "output_list and input_list must be provided to the execute() call")
