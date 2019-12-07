@@ -2,6 +2,9 @@
 Provides classes for interpreting intcode programs.
 """
 from typing import List
+import queue
+
+QUEUE_TIMEOUT = 3
 
 
 class Instruction:
@@ -33,7 +36,7 @@ class Instruction:
     def __str__(self):
         return f"[opcode: {self.opcode}, num_of_params: {self.num_of_params}, params: {str(self.params)}, raw_intcode: {self.raw_intcode}]"
 
-    def execute(self, pc, output_list, input_list) -> bool:
+    def execute(self, pc, in_queue, out_queue) -> bool:
         """ Executes the instruction.
             Has following sideeffects:
                 updates the pc depending on the length of the executed instruction,
@@ -43,9 +46,9 @@ class Instruction:
         if self.opcode in self.OPCODE_FUNCTION_MAP.keys():
             func = self.OPCODE_FUNCTION_MAP[self.opcode]
             if func == self.write:
-                return func(pc, output_list)
+                return func(pc, out_queue)
             elif func == self.read:
-                return func(pc, input_list)
+                return func(pc, in_queue)
             return func(pc)
         else:
             raise LookupError(
@@ -63,20 +66,16 @@ class Instruction:
             self.params[0].read_value() * self.params[1].read_value())
         return pc + 4
 
-    def read(self, pc, input_list: List[int]):
+    def read(self, pc, in_queue: queue.Queue):
         # read p1
-        #user_input = int(input("input integer: "))
-        if len(input_list) == 0:
-            print("jo hier ist nix drinne")
-        user_input = input_list.pop(0)
+        user_input = in_queue.get(timeout=QUEUE_TIMEOUT)
         self.params[0].save_value(user_input)
         return pc + 2
 
-    def write(self, pc, output_list: List[int]):
+    def write(self, pc, out_queue: queue.Queue):
         # write p1
         output_value = self.params[0].read_value()
-        print(f"output: {output_value}")
-        output_list.append(output_value)
+        out_queue.put(output_value)
         return pc + 2
 
     def jmp_nzero(self, pc):
@@ -201,20 +200,16 @@ class IntcodeInterpreter:
         self.reader = IntcodeReader()
         self.pc = 0
 
-    def execute_file(self, filename: str, **kwargs):
+    def execute_file(self, filename: str, in_queue: queue.Queue, out_queue: queue.Queue):
         source = self.reader.read_file(filename)
-        self.execute(source, **kwargs)
+        self.execute(source, in_queue, out_queue)
         self.pc = 0
 
-    def execute(self, source: List[int], **kwargs):
+    def execute(self, source: List[int], in_queue: queue.Queue, out_queue: queue.Queue):
         while True:
             instruction = self.reader.next_instruction(source, self.pc)
             if instruction is None:
                 break
             else:
-                if "output" and "input" in kwargs:
-                    self.pc = instruction.execute(
-                        self.pc, kwargs["output"], kwargs["input"])
-                else:
-                    raise ValueError(
-                        "output_list and input_list must be provided to the execute() call")
+                self.pc = instruction.execute(
+                    self.pc, in_queue, out_queue)
