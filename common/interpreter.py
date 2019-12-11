@@ -78,7 +78,7 @@ class Instruction:
 
     def read(self, context: InterpreterContext):
         # read p1
-        user_input = context.in_queue.get(timeout=QUEUE_TIMEOUT)
+        user_input = context.in_queue.get()
         self.params[0].save_value(user_input, context)
         return context.pc + 2
 
