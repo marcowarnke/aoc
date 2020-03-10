@@ -10,15 +10,15 @@ SRC_PATH = .
 # Space-separated pkg-config libraries used by this project
 LIBS =
 # General compiler flags
-COMPILE_FLAGS = -std=c99 -Wall -Wextra -Wpedantic -g
+COMPILE_FLAGS = -std=c99 -Wall -Wextra -Wpedantic
 # Additional release-specific flags
-RCOMPILE_FLAGS = -D NDEBUG
+RCOMPILE_FLAGS = -D NDEBUG -march=native -O2
 # Additional debug-specific flags
-DCOMPILE_FLAGS = -D DEBUG
+DCOMPILE_FLAGS = -D DEBUG -g -fsanitize=address -O1 -fno-omit-frame-pointer
 # Add additional include paths
 INCLUDES = -I $(SRC_PATH)
 # General linker settings
-LINK_FLAGS =
+LINK_FLAGS = -fsanitize=address
 # Additional release-specific linker settings
 RLINK_FLAGS =
 # Additional debug-specific linker settings

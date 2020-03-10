@@ -3,38 +3,21 @@
 #include <string.h>
 #include <stdbool.h>
 
-/* s, t: two strings; ls, lt: their respective length */
-/* copied from somewhere... */
-int lev_distance(const char *s, int ls, const char *t, int lt)
-{
-        int a, b, c;
- 
-        /* if either string is empty, difference is inserting all chars 
-         * from the other
-         */
-        if (!ls) return lt;
-        if (!lt) return ls;
- 
-        /* if last letters are the same, the difference is whatever is
-         * required to edit the rest of the strings
-         */
-        if (s[ls - 1] == t[lt - 1])
-                return lev_distance(s, ls - 1, t, lt - 1);
- 
-        /* else try:
-         *      changing last letter of s to that of t; or
-         *      remove last letter of s; or
-         *      remove last letter of t,
-         * any of which is 1 edit plus editing the rest of the strings
-         */
-        a = lev_distance(s, ls - 1, t, lt - 1);
-        b = lev_distance(s, ls,     t, lt - 1);
-        c = lev_distance(s, ls - 1, t, lt    );
- 
-        if (a > b) a = b;
-        if (a > c) a = c;
- 
-        return a + 1;
+int sndiff(const char* a, const char* b) {
+    int ndiff = 0;
+
+    while (*a && *b)
+        if (*(a++) != *(b++))
+            ndiff++;
+
+    return ndiff + strlen(a) + strlen(b);
+}
+
+static void pcommon(const char* a, const char* b) {
+    while (*a && *b)
+        if (*(a++) == *(b++))
+            putchar(a[-1]);
+    putchar('\n');
 }
 
 void part2(FILE* file) {
@@ -45,26 +28,25 @@ void part2(FILE* file) {
     size_t lines = 0;
     for (size_t i = 0; !feof(file); i++) {
         fscanf(file, "%s\n", buffer);
-        printf("buf: %s\n", buffer);
-        ids[i] = malloc(strlen(buffer) * sizeof(char));
-        //TODO copy into the ids[i]
+        size_t buffer_size = strlen(buffer) + 1;
+        ids[i] = malloc(buffer_size * sizeof(char));
+        memcpy(ids[i], buffer, buffer_size * sizeof(char));
         lines++;
     }
 
     for (size_t i = 0; i < lines; i++) {
-        printf("%lu : %lu : %s\n", i, strlen(ids[i]), ids[i]);
-    }
-
-    for (size_t i = 0; i < lines; i++) {
         for (size_t j = 0; j < lines; j++) {
-            int alen = strlen(ids[i]);
-            int blen = strlen(ids[j]);
-            int distance = lev_distance(ids[i], alen, ids[j], blen);
-            if (distance == 1)
-                printf("found words %s and %s\n", ids[i], ids[j]);
+            int distance = sndiff(ids[i], ids[j]);
+            if (distance == 1) {
+                printf("\nfound words %s and %s\n", ids[i], ids[j]);
+                pcommon(ids[i], ids[j]);
+            }
         }
     }
 
+    for (size_t i = 0; i < lines; i++) {
+        free(ids[i]);
+    }
     free(ids);
 }
 
