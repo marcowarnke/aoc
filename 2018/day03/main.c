@@ -30,8 +30,7 @@ static void claim_fabric(void *tfabric, claim_t *claim) {
   }
 }
 
-static void claim_tiles(void *tfabric, claim_t *claim) {
-  fab_tile_t(*fabric)[FABRIC_SIZE] = tfabric;
+static void claim_tiles(fab_tile_t **fabric, claim_t *claim) {
   for (size_t i = claim->spc_top; i < (claim->spc_top + claim->height); i++) {
     for (size_t j = claim->spc_left; j < (claim->spc_left + claim->width);
          j++) {
@@ -87,9 +86,10 @@ static void part1(FILE *file) {
   free(claims);
 }
 
-static void init_tiles(void *tfabric) {
-  fab_tile_t(*fabric)[FABRIC_SIZE] = tfabric;
+static void init_tiles(fab_tile_t **fabric) {
   for (size_t i = 0; i < FABRIC_SIZE; i++) {
+    // allocate columns
+    fabric[i] = calloc(FABRIC_SIZE, sizeof(fab_tile_t));
     for (size_t j = 0; j < FABRIC_SIZE; j++) {
       fab_tile_t tile = {.count_claims = 0,
                          .claims =
@@ -99,9 +99,19 @@ static void init_tiles(void *tfabric) {
   }
 }
 
+static void destroy_fabric(fab_tile_t **fabric) {
+  for (size_t i = 0; i < FABRIC_SIZE; i++) {
+    for (size_t j = 0; j < FABRIC_SIZE; j++) {
+      free(fabric[i][j].claims);
+    }
+    free(fabric[i]);
+  }
+  free(fabric);
+}
+
 static void part2(FILE *file) {
-  // create the fabric like a game board
-  fab_tile_t *fabric[FABRIC_SIZE][FABRIC_SIZE] = {0};
+  // malloc because of huge memeory size
+  fab_tile_t **fabric = calloc(FABRIC_SIZE, sizeof(fab_tile_t *));
   claim_t *claims = calloc(CLAIM_COUNTS, sizeof(claim_t));
   size_t claim_count = 0;
   init_tiles(fabric);
@@ -116,9 +126,10 @@ static void part2(FILE *file) {
                      .has_overlaps = false};
     memcpy(&claims[id], &claim, sizeof(claim_t));
     claim_count++;
-    claim_tiles(&fabric, &claims[id]);
+    claim_tiles(fabric, &claims[id]);
   }
   print_single_claims(claims, claim_count);
+  destroy_fabric(fabric);
   free(claims);
 }
 
