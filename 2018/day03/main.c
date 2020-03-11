@@ -91,7 +91,10 @@ static void init_tiles(void *tfabric) {
   fab_tile_t(*fabric)[FABRIC_SIZE] = tfabric;
   for (size_t i = 0; i < FABRIC_SIZE; i++) {
     for (size_t j = 0; j < FABRIC_SIZE; j++) {
-      fabric[i][j].claims = calloc(MAX_CLAIMS_PER_TILE, sizeof(claim_t *));
+      fab_tile_t tile = {.count_claims = 0,
+                         .claims =
+                             calloc(MAX_CLAIMS_PER_TILE, sizeof(claim_t *))};
+      fabric[i][j] = tile;
     }
   }
 }
@@ -125,16 +128,12 @@ int main(int argc, const char **argv) {
     return EXIT_FAILURE;
   }
 
-  fopen(NULL, "r");
-
   FILE *file = fopen(argv[1], "r");
   if (!file) {
     perror("failed to open file!\n");
     return EXIT_FAILURE;
   }
 
-  part1(file);
-  rewind(file);
   part2(file);
 
   fclose(file);
